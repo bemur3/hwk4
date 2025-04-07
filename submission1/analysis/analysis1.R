@@ -38,7 +38,7 @@ plan_counts <- ggplot(county_plan_counts, aes(x = factor(year), y = plan_count))
   )
 ggsave("plan_counts.png", plot = plan_counts, width = 8, height = 5)
 
-# 2. Star Rating Distributions
+## 2. Star Rating Distributions
 
 # Filter for target years and clean scores
 star_subset <- ma_data %>%
@@ -48,38 +48,63 @@ star_subset <- ma_data %>%
     partc_score = factor(partc_score, levels = sort(unique(partc_score)))
   )
 
-# Function to generate and save each plot
-save_star_plot <- function(data, year_val) {
-  filtered <- data %>% filter(year == year_val)
-
-  star_plot <- ggplot(filtered, aes(x = partc_score)) +
-    geom_bar(fill = "steelblue", color = "black") +
-    labs(
-      title = paste("MA Part C Star Rating Distribution -", year_val),
-      x = "Star Rating",
-      y = "Number of Plans"
-    ) +
-    theme_minimal(base_size = 14) +
-    theme(
-      plot.background = element_rect(fill = "white", color = NA),
-      panel.background = element_rect(fill = "white", color = NA),
-      panel.grid.major = element_line(color = "gray80"),
-      panel.grid.minor = element_line(color = "gray90")
-    )
-
-  ggsave(
-    filename = paste0("results/star_rating_", year_val, ".png"),
-    plot = star_plot,
-    width = 8,
-    height = 5,
-    dpi = 300,
-    bg = "white"
+# 2010
+star_rating_2010 <- star_subset %>%
+  filter(year == 2010) %>%
+  ggplot(aes(x = partc_score)) +
+  geom_bar(fill = "steelblue", color = "black") +
+  labs(
+    title = "MA Part C Star Rating Distribution - 2010",
+    x = "Star Rating",
+    y = "Number of Plans"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.background = element_rect(fill = "white", color = NA),
+    panel.background = element_rect(fill = "white", color = NA),
+    panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray90")
   )
-}
 
-save_star_plot(star_subset, 2010)
-save_star_plot(star_subset, 2012)
-save_star_plot(star_subset, 2015)
+# 2012
+star_rating_2012 <- star_subset %>%
+  filter(year == 2012) %>%
+  ggplot(aes(x = partc_score)) +
+  geom_bar(fill = "steelblue", color = "black") +
+  labs(
+    title = "MA Part C Star Rating Distribution - 2012",
+    x = "Star Rating",
+    y = "Number of Plans"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.background = element_rect(fill = "white", color = NA),
+    panel.background = element_rect(fill = "white", color = NA),
+    panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray90")
+  )
+
+# 2015
+star_rating_2015 <- star_subset %>%
+  filter(year == 2015) %>%
+  ggplot(aes(x = partc_score)) +
+  geom_bar(fill = "steelblue", color = "black") +
+  labs(
+    title = "MA Part C Star Rating Distribution - 2015",
+    x = "Star Rating",
+    y = "Number of Plans"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.background = element_rect(fill = "white", color = NA),
+    panel.background = element_rect(fill = "white", color = NA),
+    panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray90")
+  )
+print(star_rating_2010)
+print(star_rating_2012)
+print(star_rating_2015)
+
 
 # 3. Average Benchmark Payment
 
@@ -275,4 +300,5 @@ bandwidth_plot <- ggplot(results_clean, aes(x = bandwidth, y = estimate, color =
 # Save the plot
 ggsave("results/rd_sensitivity_bandwidths.png", plot = bandwidth_plot, width = 9, height = 6, dpi = 300, bg = "white")
 
-save.image("submission1/Hwk4_workspace.RData")
+rm(list=c("ma_data", "ma_filtered", "county_plan_counts", "cor_data", "rating_2010", "rd_data", "rd_3", "rd_35", "rd_results", "star_rd_data", "run_rdrobust", "cutoffs", "bandwidths", "grid", "results", "results_clean"))
+save.image("submission1/Hmwk4_workspace.RData")

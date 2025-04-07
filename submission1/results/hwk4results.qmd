@@ -30,178 +30,72 @@ Here is a link to my repository: {https://github.com/bemur3/hwk4}
 #| eval: true
 
 
-load("/Users/ethanmurakami/Documents/GitHub/hwk4/submission1/Hwk4_workspace.Rdata")
+load("/Users/ethanmurakami/Documents/GitHub/hwk4/submission1/Hmwk4_workspace.RData")
 ```
 
 
 \newpage 
 
 
-## Plan Count Distribution
+## 1. Remove all SNPs, 800-series plans, and prescription drug only plans (i.e., plans that do not offer Part C benefits). Provide a box and whisker plot showing the distribution of plan counts by county over time. Do you think that the number of plans is sufficient, too few, or too many?
 
 ```{r}
-ma_data <- read_rds("data/output/final_ma_data.rds")
+#| echo: false
 
-ma_filtered <- ma_data %>%
-  filter(
-    snp != "Y",
-    planid < 800,
-    !(partd == "Y" & plan_type == "PDP")
-  )
-
-county_plan_counts <- ma_filtered %>%
-  group_by(year, state, county) %>%
-  summarise(plan_count = n(), .groups = "drop")
-
-plan_counts <- ggplot(county_plan_counts, aes(x = factor(year), y = plan_count)) +
-  geom_boxplot(fill = "skyblue", color = "darkblue") +
-  labs(
-    title = "Distribution of Medicare Advantage Plans per County (2007–2015)",
-    x = "Year",
-    y = "Number of Plans per County"
-  ) +
-  theme_minimal(base_size = 14)
 
 print(plan_counts)
 ```
 
 \newpage 
 
-## Star Rating Distributions
+## 2. Provide bar graphs showing the distribution of star ratings in 2010, 2012, and 2015. How has this distribution changed over time?
 
 ```{r}
-star_subset <- ma_data %>%
-  filter(year %in% c(2010, 2012, 2015), !is.na(partc_score)) %>%
-  mutate(
-    year = as.integer(year),
-    partc_score = factor(partc_score, levels = sort(unique(partc_score)))
-  )
-
-star_plot <- function(data, year_val) {
-  ggplot(filter(data, year == year_val), aes(x = partc_score)) +
-    geom_bar(fill = "steelblue", color = "black") +
-    labs(
-      title = paste("MA Part C Star Rating Distribution -", year_val),
-      x = "Star Rating",
-      y = "Number of Plans"
-    ) +
-    theme_minimal(base_size = 14)
-}
-
-print(star_plot(star_subset, 2010))
-```
-
-```{r}
-print(star_plot(star_subset, 2012))
-```
-
-```{r}
-print(star_plot(star_subset, 2015))
+#| echo: false
+print(star_rating_2010)
+print(star_rating_2012)
+print(star_rating_2015)
 ```
 
 \newpage 
 
-## Average Benchmark Payment
+## 3. Plot the average benchmark payment over time from 2010 through 2015. How much has the average benchmark payment risen over the years?
 
 ```{r}
-benchmark_summary <- ma_data %>%
-  filter(year %in% 2010:2015, !is.na(ma_rate)) %>%
-  group_by(year) %>%
-  summarize(avg_benchmark = mean(ma_rate, na.rm = TRUE))
+#| echo: false
 
-benchmark_plot <- ggplot(benchmark_summary, aes(x = year, y = avg_benchmark)) +
-  geom_line(color = "darkgreen", linewidth = 1.2) +
-  geom_point(size = 3) +
-  labs(
-    title = "Average MA Benchmark Payment (2010–2015)",
-    x = "Year",
-    y = "Average Benchmark Payment ($)"
-  ) +
-  theme_minimal(base_size = 14)
 
 print(benchmark_plot)
 ```
 
 \newpage 
 
-## Average Share of MA Enrollment
+## 4. Plot the average share of Medicare Advantage (relative to all Medicare eligibles) over time from 2010 through 2015. Has Medicare Advantage increased or decreased in popularity? How does this share correlate with benchmark payments?
 
 ```{r}
-ma_share_summary <- ma_data %>%
-  filter(year %in% 2010:2015, avg_eligibles > 0, avg_enrolled >= 0) %>%
-  mutate(ma_share = avg_enrolled / avg_eligibles) %>%
-  group_by(year) %>%
-  summarize(avg_ma_share = mean(ma_share, na.rm = TRUE))
-
-ma_plot <- ggplot(ma_share_summary, aes(x = year, y = avg_ma_share)) +
-  geom_line(color = "dodgerblue", linewidth = 1.2) +
-  geom_point(size = 3) +
-  scale_y_continuous(labels = percent_format(accuracy = 1)) +
-  labs(
-    title = "Average Share of MA Enrollment (2010–2015)",
-    x = "Year",
-    y = "MA Share of Medicare Eligibles"
-  ) +
-  theme_minimal(base_size = 14)
+#| echo: false
 
 print(ma_plot)
-```
-
-## Correlation Between MA Share and Benchmark
-
-```{r}
-cor_data <- ma_data %>%
-  filter(year %in% 2010:2015, avg_eligibles > 0, avg_enrolled >= 0, !is.na(ma_rate)) %>%
-  mutate(ma_share = avg_enrolled / avg_eligibles)
-
-cor_result <- cor.test(cor_data$ma_share, cor_data$ma_rate)
 print(cor_result)
 ```
 
 \newpage 
 
-## Number of Plans Rounded to Each Star Rating
+## 5. Calculate the running variable underlying the star rating. Provide a table showing the number of plans that are rounded up into a 3-star, 3.5-star, 4-star, 4.5-star, and 5-star rating.
 
 ```{r}
-rating_2010 <- ma_data %>%
-  filter(year == 2010, !is.na(partc_score)) %>%
-  mutate(rounded_score = round(partc_score * 2) / 2) %>%
-  count(rounded_score) %>%
-  filter(rounded_score %in% c(3, 3.5, 4, 4.5, 5)) %>%
-  rename(`Rounded Star Rating` = rounded_score, `Number of Plans` = n)
+#| echo: false
+
 
 kable(rating_2010, caption = "Number of Plans Rounded to Each Star Rating in 2010")
 ```
 
 \newpage 
 
-## RD Estimate of Star Rating on Enrollment
+## 6. Using the RD estimator with a bandwidth of 0.125, provide an estimate of the effect of receiving a 3-star versus a 2.5 star rating on enrollments. Repeat the exercise to estimate the effects at 3.5 stars, and summarize your results in a table.
 
 ```{r}
-rd_data <- ma_data %>%
-  filter(year == 2010, !is.na(partc_score), !is.na(avg_enrollment))
+#| echo: false
 
-estimate_rd_discrete <- function(data, below_score, above_score) {
-  below <- data %>% filter(partc_score == below_score)
-  above <- data %>% filter(partc_score == above_score)
-
-  effect <- mean(above$avg_enrollment, na.rm = TRUE) - mean(below$avg_enrollment, na.rm = TRUE)
-  se <- sqrt(var(above$avg_enrollment, na.rm = TRUE)/nrow(above) +
-             var(below$avg_enrollment, na.rm = TRUE)/nrow(below))
-  t_stat <- effect / se
-  p_val <- 2 * (1 - pt(abs(t_stat), df = min(nrow(above), nrow(below)) - 1))
-
-  tibble(
-    `Cutoff` = paste0(above_score, " vs ", below_score, " Stars"),
-    `Estimate` = effect,
-    `Std. Error` = se,
-    `P-value` = p_val
-  )
-}
-
-rd_3 <- estimate_rd_discrete(rd_data, below_score = 2.5, above_score = 3.0)
-rd_35 <- estimate_rd_discrete(rd_data, below_score = 3.0, above_score = 3.5)
-
-rd_results <- bind_rows(rd_3, rd_35)
 kable(rd_results, caption = "RD Estimates of Star Rating Thresholds on Enrollment")
 ```
