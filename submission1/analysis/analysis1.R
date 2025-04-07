@@ -274,3 +274,5 @@ bandwidth_plot <- ggplot(results_clean, aes(x = bandwidth, y = estimate, color =
 
 # Save the plot
 ggsave("results/rd_sensitivity_bandwidths.png", plot = bandwidth_plot, width = 9, height = 6, dpi = 300, bg = "white")
+
+save.image("submission1/Hwk4_workspace.RData")
