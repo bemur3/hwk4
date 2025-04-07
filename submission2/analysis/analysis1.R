@@ -3,6 +3,7 @@ library(scales)
 # Load merged and cleaned Medicare Advantage data
 ma_data <- read_rds("data/output/final_ma_data.rds")
 
+
 # 1. Plan Count Distribution
 
 # Filter out:
@@ -13,7 +14,8 @@ ma_filtered <- ma_data %>%
   filter(
     snp != "Y",
     planid < 800,
-    !(partd == "Y" & plan_type == "PDP")
+    !(partd == "Y" & plan_type == "PDP"),
+    year %in% 2010:2015
   )
 
 # Count number of plans per county per year
@@ -23,12 +25,13 @@ county_plan_counts <- ma_filtered %>%
 
 # Create boxplot of plan counts by county over time
 plan_counts <- ggplot(county_plan_counts, aes(x = factor(year), y = plan_count)) +
-  geom_boxplot(fill = "skyblue", color = "darkblue") +
+  geom_boxplot(fill = "skyblue", color = "darkblue", outlier.shape = NA) +
   labs(
     title = "Distribution of Medicare Advantage Plans per County (2007–2015)",
     x = "Year",
     y = "Number of Plans per County"
   ) +
+  scale_y_continuous(limits = c(0, 50)) + 
   theme_minimal(base_size = 14) +
   theme(
     plot.background = element_rect(fill = "white", color = NA),
@@ -38,23 +41,22 @@ plan_counts <- ggplot(county_plan_counts, aes(x = factor(year), y = plan_count))
   )
 ggsave("plan_counts.png", plot = plan_counts, width = 8, height = 5)
 
-## 2. Star Rating Distributions
+# 2. Star Rating Distributions
 
 # Filter for target years and clean scores
 star_subset <- ma_data %>%
   filter(year %in% c(2010, 2012, 2015), !is.na(partc_score)) %>%
   mutate(
-    year = as.integer(year),
+    year = factor(year),  # use as categorical for facetting
     partc_score = factor(partc_score, levels = sort(unique(partc_score)))
   )
 
-# 2010
-star_rating_2010 <- star_subset %>%
-  filter(year == 2010) %>%
-  ggplot(aes(x = partc_score)) +
+# Create a faceted bar plot for star rating distributions
+star_rating_plot <- ggplot(star_subset, aes(x = partc_score)) +
   geom_bar(fill = "steelblue", color = "black") +
+  facet_wrap(~ year, nrow = 1) +
   labs(
-    title = "MA Part C Star Rating Distribution - 2010",
+    title = "MA Part C Star Rating Distributions (2010, 2012, 2015)",
     x = "Star Rating",
     y = "Number of Plans"
   ) +
@@ -66,44 +68,9 @@ star_rating_2010 <- star_subset %>%
     panel.grid.minor = element_line(color = "gray90")
   )
 
-# 2012
-star_rating_2012 <- star_subset %>%
-  filter(year == 2012) %>%
-  ggplot(aes(x = partc_score)) +
-  geom_bar(fill = "steelblue", color = "black") +
-  labs(
-    title = "MA Part C Star Rating Distribution - 2012",
-    x = "Star Rating",
-    y = "Number of Plans"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.background = element_rect(fill = "white", color = NA),
-    panel.background = element_rect(fill = "white", color = NA),
-    panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray90")
-  )
+# Print the plot
+print(star_rating_plot)
 
-# 2015
-star_rating_2015 <- star_subset %>%
-  filter(year == 2015) %>%
-  ggplot(aes(x = partc_score)) +
-  geom_bar(fill = "steelblue", color = "black") +
-  labs(
-    title = "MA Part C Star Rating Distribution - 2015",
-    x = "Star Rating",
-    y = "Number of Plans"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.background = element_rect(fill = "white", color = NA),
-    panel.background = element_rect(fill = "white", color = NA),
-    panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray90")
-  )
-print(star_rating_2010)
-print(star_rating_2012)
-print(star_rating_2015)
 
 
 # 3. Average Benchmark Payment
@@ -160,145 +127,64 @@ print(cor_result)
 # 5. 
 
 # Filter for 2010 and relevant columns
-rating_2010 <- ma_data %>%
-  filter(year == 2010, !is.na(partc_score)) %>%
-  mutate(rounded_score = round(partc_score * 2) / 2) %>%
-  count(rounded_score) %>%
-  filter(rounded_score %in% c(3, 3.5, 4, 4.5, 5)) %>%
-  rename(`Rounded Star Rating` = rounded_score,
-         `Number of Plans` = n)
 
-# Display table
-kable(rating_2010, caption = "Number of Plans Rounded to Each Star Rating in 2010")
+data.2010 <- ma_data %>%
+             filter(!is.na(avg_enrollment) & year==2010 & !is.na(partc_score))
+colnames(data.2010)
 
+data.2010 <- data.2010 %>%
+  mutate(raw.rating=rowMeans(
+    cbind(breastcancer_screen, rectalcancer_screen, cv_diab_cholscreen, glaucoma_test,
+          monitoring, flu_vaccine, pn_vaccine, physical_health, mental_health,
+          osteo_test, physical_monitor, primaryaccess, osteo_manage,
+          diab_healthy, bloodpressure, ra_manage, copd_test, bladder,
+          falling, nodelays, doctor_communicate, carequickly, customer_service,                    
+          overallrating_care, overallrating_plan, complaints_plan, appeals_timely,
+          appeals_review, leave_plan, audit_problems, hold_times, info_accuracy,
+          ttyt_available),
+    na.rm=T)) %>%
+    select(contractid, planid, fips, avg_enrollment, state, county, raw.rating, partc_score,
+         avg_eligibles, avg_enrolled, premium_partc, risk_ab, Star_Rating,
+         bid, avg_ffscost, ma_rate, plan_type) %>%
+    mutate(mkt_share = avg_enrollment/avg_eligibles,
+          HMO=str_detect(plan_type, "HMO"))
+colnames(data.2010)
+
+### how many were rounded up?
+rating.2010 <- data.2010 %>%
+  mutate(rounded_30=ifelse(raw.rating>=2.75 & raw.rating<3.00 & Star_Rating==3.0,1,0),
+         rounded_35=ifelse(raw.rating>=3.25 & raw.rating<3.50 & Star_Rating==3.5,1,0),
+         rounded_40=ifelse(raw.rating>=3.75 & raw.rating<4.00 & Star_Rating==4.0,1,0),
+         rounded_45=ifelse(raw.rating>=4.25 & raw.rating<4.50 & Star_Rating==4.5,1,0),
+         rounded_50=ifelse(raw.rating>=4.75 & raw.rating<5.00 & Star_Rating==5.0,1,0)) %>%
+  group_by(Star_Rating) %>% filter(Star_Rating %in% c(3, 3.5, 4, 4.5, 5)) %>%
+  summarize(count_30=sum(rounded_30),
+            count_35=sum(rounded_35),
+            count_40=sum(rounded_40),
+            count_45=sum(rounded_45),
+            count_50=sum(rounded_50)) %>%
+  mutate(rounded.up = count_30 + count_35 + count_40 + count_45 + count_50) %>%
+  select(Star_Rating, rounded.up) 
+
+kable(rating.2010, caption="Number of Plans Rounded Up to Each Start Ratint(2010)")
 
 # 6. 
+star30 <- lm(mkt_share ~ treat +score,
+             data=(data.2010 %>%
+             filter(raw.rating>=(2.75-0.125),
+             raw.rating<=(2.75+0.125),
+             Star_Rating %in% c(2.5, 3.0)) %>%
+             mutate(treat=(Star_Rating==3.0),
+                    score=raw.rating-2.75)))
 
-library(rdrobust)
-
-# Filter to 2010 data with relevant variables
-rd_data <- ma_data %>%
-  filter(year == 2010, !is.na(partc_score), !is.na(avg_enrollment))
-
-# Define function for comparing cutoff groups directly
-estimate_rd_discrete <- function(data, below_score, above_score) {
-  below <- data %>% filter(partc_score == below_score)
-  above <- data %>% filter(partc_score == above_score)
-
-  effect <- mean(above$avg_enrollment, na.rm = TRUE) - mean(below$avg_enrollment, na.rm = TRUE)
-  se <- sqrt(var(above$avg_enrollment, na.rm = TRUE)/nrow(above) +
-             var(below$avg_enrollment, na.rm = TRUE)/nrow(below))
-
-  t_stat <- effect / se
-  p_val <- 2 * (1 - pt(abs(t_stat), df = min(nrow(above), nrow(below)) - 1))
-
-  tibble(
-    `Cutoff` = paste0(above_score, " vs ", below_score, " Stars"),
-    `Estimate` = effect,
-    `Std. Error` = se,
-    `P-value` = p_val
-  )
-}
-
-# Estimate effects at 3.0 and 3.5 star thresholds
-rd_3 <- estimate_rd_discrete(rd_data, below_score = 2.5, above_score = 3.0)
-rd_35 <- estimate_rd_discrete(rd_data, below_score = 3.0, above_score = 3.5)
-
-# Combine and print
-rd_results <- bind_rows(rd_3, rd_35)
-print(rd_results)
-
+star35 <- lm(mkt_share ~ treat +score,
+             data=(data.2010 %>%
+             filter(raw.rating>=(3.25-0.125),
+             raw.rating<=(3.25+0.125),
+             Star_Rating %in% c(3.0, 3.5)) %>%
+             mutate(treat=(Star_Rating==3.5),
+                    score=raw.rating-3.25)))
 # 7.
-
-library(ggplot2)
-# Filter and prepare the data for RD analysis
-star_rd_data <- ma_data %>%
-  filter(year == 2010, !is.na(partc_score), !is.na(avg_enrollment)) %>%
-  select(partc_score, avg_enrollment)
-
-# Function to run rdrobust and return a clean tibble
-run_rdrobust <- function(cutoff, bandwidth) {
-  data <- star_rd_data %>%
-    filter(partc_score >= (cutoff - bandwidth), partc_score <= (cutoff + bandwidth))
-
-  if (nrow(data) < 50) {
-    return(tibble(
-      cutoff = cutoff,
-      bandwidth = bandwidth,
-      estimate = NA,
-      se = NA
-    ))
-  }
-
-  model <- tryCatch(
-    rdrobust(
-      y = data$avg_enrollment,
-      x = data$partc_score,
-      c = cutoff,
-      h = bandwidth
-    ),
-    error = function(e) NULL
-  )
-
-  if (is.null(model)) {
-    return(tibble(
-      cutoff = cutoff,
-      bandwidth = bandwidth,
-      estimate = NA,
-      se = NA
-    ))
-  }
-
-  tibble(
-    cutoff = cutoff,
-    bandwidth = bandwidth,
-    estimate = model$coef[1],
-    se = model$se[1]
-  )
-}
-
-# Grid of cutoffs and bandwidths
-cutoffs <- c(3, 3.5)
-bandwidths <- c(0.10, 0.12, 0.13, 0.14, 0.15)
-grid <- expand.grid(cutoff = cutoffs, bandwidth = bandwidths)
-
-# Run all combinations
-results <- purrr::pmap_dfr(grid, function(cutoff, bandwidth) {
-  run_rdrobust(cutoff, bandwidth)
-})
-
-# Add readable labels for plotting
-results <- results %>%
-  mutate(
-    cutoff_label = case_when(
-      cutoff == 3 ~ "3 vs 2.5 Stars",
-      cutoff == 3.5 ~ "3.5 vs 3 Stars"
-    )
-  )
-
-# Filter for valid estimates only
-results_clean <- results %>% filter(!is.na(estimate))
-
-# Plot the results
-bandwidth_plot <- ggplot(results_clean, aes(x = bandwidth, y = estimate, color = cutoff_label)) +
-  geom_line(linewidth = 1.2) +
-  geom_point(size = 3) +
-  geom_errorbar(aes(ymin = estimate - 1.96 * se, ymax = estimate + 1.96 * se), width = 0.005) +
-  labs(
-    title = "Sensitivity of RD Estimates to Bandwidth Choice",
-    x = "Bandwidth",
-    y = "Estimated Effect on Enrollment",
-    color = "Rating Cutoff"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.background = element_rect(fill = "white", color = NA),
-    panel.background = element_rect(fill = "white", color = NA),
-    legend.position = "top"
-  )
-
-# Save the plot
-ggsave("results/rd_sensitivity_bandwidths.png", plot = bandwidth_plot, width = 9, height = 6, dpi = 300, bg = "white")
 
 rm(list=c("ma_data", "ma_filtered", "county_plan_counts", "cor_data", "rating_2010", "rd_data", "rd_3", "rd_35", "rd_results", "star_rd_data", "run_rdrobust", "cutoffs", "bandwidths", "grid", "results", "results_clean"))
 save.image("submission1/Hmwk4_workspace.RData")
