@@ -184,7 +184,99 @@ star35 <- lm(mkt_share ~ treat +score,
              Star_Rating %in% c(3.0, 3.5)) %>%
              mutate(treat=(Star_Rating==3.5),
                     score=raw.rating-3.25)))
+
+# Load broom for tidy model summaries
+library(broom)
+
+# Function to extract model info
+extract_model_info <- function(model, label) {
+  tidy_vals <- broom::tidy(model)
+  glance_vals <- broom::glance(model)
+
+  tibble::tibble(
+    `Cutoff` = label,
+    `Intercept` = round(tidy_vals$estimate[tidy_vals$term == "(Intercept)"], 3),
+    `Rounded Up` = round(tidy_vals$estimate[tidy_vals$term == "treatTRUE"], 3),
+    `Running Score` = round(tidy_vals$estimate[tidy_vals$term == "score"], 3),
+    `Num Obs` = glance_vals$nobs,
+    `R-squared` = round(glance_vals$r.squared, 3),
+    `RMSE` = round(sqrt(glance_vals$sigma^2), 3)
+  )
+}
+
+# Apply to both models
+rd_table_30 <- extract_model_info(star30, "3 vs 2.5 Stars")
+rd_table_35 <- extract_model_info(star35, "3.5 vs 3 Stars")
+
+# Combine
+rd_summary_table <- dplyr::bind_rows(rd_table_30, rd_table_35)
+
+# Display
+knitr::kable(rd_summary_table, caption = "RDD Regression Summary (Bandwidth = 0.125)")
+
+
+
 # 7.
+
+# Define bandwidths and cutoff points
+bandwidths <- c(0.10, 0.12, 0.13, 0.14, 0.15)
+cutoffs <- c(2.75, 3.25)
+labels <- c("3 vs 2.5 Stars", "3.5 vs 3 Stars")
+
+# Function to estimate model and return treatment effect
+run_rd_model <- function(data, cutoff, bandwidth, label) {
+  lower <- cutoff - bandwidth
+  upper <- cutoff + bandwidth
+  treat_val <- ifelse(cutoff == 2.75, 3.0, 3.5)
+  control_val <- ifelse(cutoff == 2.75, 2.5, 3.0)
+  
+  df <- data %>%
+    filter(raw.rating >= lower, raw.rating <= upper,
+           Star_Rating %in% c(control_val, treat_val)) %>%
+    mutate(treat = Star_Rating == treat_val,
+           score = raw.rating - cutoff)
+  
+  model <- lm(mkt_share ~ treat + score, data = df)
+  tidy_model <- tidy(model)
+  glance_model <- glance(model)
+  
+  tibble(
+    Cutoff = label,
+    Bandwidth = bandwidth,
+    Estimate = tidy_model$estimate[tidy_model$term == "treatTRUE"],
+    SE = tidy_model$std.error[tidy_model$term == "treatTRUE"],
+    N = glance_model$nobs,
+    R2 = glance_model$r.squared
+  )
+}
+
+# Run models for all bandwidths and cutoffs
+results <- purrr::map2_dfr(
+  rep(cutoffs, each = length(bandwidths)),
+  rep(labels, each = length(bandwidths)),
+  ~ {
+    map_dfr(bandwidths, function(bw) {
+      run_rd_model(data.2010, .x, bw, .y)
+    })
+  }
+)
+
+# Plot results
+effect_plot <- ggplot(results, aes(x = Bandwidth, y = Estimate, color = Cutoff)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = Estimate - 1.96 * SE,
+                    ymax = Estimate + 1.96 * SE), width = 0.005) +
+  labs(
+    title = "RDD Treatment Effect Estimates Across Bandwidths",
+    x = "Bandwidth",
+    y = "Estimated Treatment Effect on Market Share"
+  ) +
+  theme_minimal(base_size = 14) +
+  scale_color_manual(values = c("3 vs 2.5 Stars" = "darkblue", "3.5 vs 3 Stars" = "firebrick"))
+
+print(effect_plot)
+
 
 rm(list=c("ma_data", "ma_filtered", "county_plan_counts", "cor_data", "rating_2010", "rd_data", "rd_3", "rd_35", "rd_results", "star_rd_data", "run_rdrobust", "cutoffs", "bandwidths", "grid", "results", "results_clean"))
 save.image("submission1/Hmwk4_workspace.RData")
