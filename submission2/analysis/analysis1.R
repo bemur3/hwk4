@@ -277,6 +277,30 @@ effect_plot <- ggplot(results, aes(x = Bandwidth, y = Estimate, color = Cutoff))
 
 print(effect_plot)
 
+# 8. 
+
+library(gridExtra)
+
+# Subset data around each cutoff
+cutoff_3 <- data.2010 %>% filter(raw.rating >= 2.75 & raw.rating < 3.25)
+cutoff_35 <- data.2010 %>% filter(raw.rating >= 3.25 & raw.rating < 3.75)
+
+# Plot around 3.0 cutoff
+plot_3 <- ggplot(cutoff_3, aes(x = raw.rating)) +
+  geom_density(fill = "skyblue", alpha = 0.6) +
+  geom_vline(xintercept = 3.0, linetype = "dashed", color = "red") +
+  labs(title = "(a) Around 3.0 Cutoff", x = "Running Variable", y = "Density") +
+  theme_minimal(base_size = 14)
+
+# Plot around 3.5 cutoff
+plot_35 <- ggplot(cutoff_35, aes(x = raw.rating)) +
+  geom_density(fill = "lightgreen", alpha = 0.6) +
+  geom_vline(xintercept = 3.5, linetype = "dashed", color = "red") +
+  labs(title = "(b) Around 3.5 Cutoff", x = "Running Variable", y = "Density") +
+  theme_minimal(base_size = 14)
+
+# Combine the plots side-by-side
+grid.arrange(plot_3, plot_35, ncol = 2, top = "Density of the Running Variable Near RD Thresholds")
 
 rm(list=c("ma_data", "ma_filtered", "county_plan_counts", "cor_data", "rating_2010", "rd_data", "rd_3", "rd_35", "rd_results", "star_rd_data", "run_rdrobust", "cutoffs", "bandwidths", "grid", "results", "results_clean"))
 save.image("submission1/Hmwk4_workspace.RData")
