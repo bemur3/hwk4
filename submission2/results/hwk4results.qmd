@@ -18,7 +18,7 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, readr, readxl, hrbrthemes, fixest,
                scales, gganimate, gapminder, gifski, png, tufte, plotly, OECD,
                ggrepel, survey, foreign, devtools, pdftools, kableExtra, modelsummary,
-               kableExtra)
+               kableExtra, broom, gridExtra)
 ```
 
 Here is a link to my repository: {https://github.com/bemur3/hwk4}
@@ -30,7 +30,7 @@ Here is a link to my repository: {https://github.com/bemur3/hwk4}
 #| eval: true
 
 
-load("/Users/ethanmurakami/Documents/GitHub/hwk4/submission1/Hmwk4_workspace.RData")
+load("/Users/ethanmurakami/Documents/GitHub/hwk4/submission2/Hwk4_workspace.RData")
 ```
 
 
@@ -52,9 +52,7 @@ print(plan_counts)
 
 ```{r}
 #| echo: false
-print(star_rating_2010)
-print(star_rating_2012)
-print(star_rating_2015)
+print(star_rating_plot)
 ```
 
 \newpage 
@@ -75,8 +73,8 @@ print(benchmark_plot)
 ```{r}
 #| echo: false
 
-print(ma_plot)
-print(cor_result)
+print(ma_share_plot)
+
 ```
 
 \newpage 
@@ -85,9 +83,9 @@ print(cor_result)
 
 ```{r}
 #| echo: false
+kable(rating.2010, caption="Number of Plans Rounded Up to Each Start Ratint(2010)")
 
 
-kable(rating_2010, caption = "Number of Plans Rounded to Each Star Rating in 2010")
 ```
 
 \newpage 
@@ -96,6 +94,31 @@ kable(rating_2010, caption = "Number of Plans Rounded to Each Star Rating in 201
 
 ```{r}
 #| echo: false
+knitr::kable(rd_summary_table, caption = "RDD Regression Summary (Bandwidth = 0.125)")
 
-kable(rd_results, caption = "RD Estimates of Star Rating Thresholds on Enrollment")
+```
+
+\newpage
+
+## 7. Repeat your results for bandwidhts of 0.1, 0.12, 0.13, 0.14, and 0.15 (again for 3 and 3.5 stars). Show all of the results in a graph. How sensitive are your findings to the choice of bandwidth?
+
+```{r}
+#| echo: false
+
+print(effect_plot)
+
+
+```
+
+\newpage
+
+## 8. Examine (graphically) whether contracts appear to manipulate the running variable. In other words, look at the distribution of the running variable before and after the relevent threshold values. What do you find
+
+```{r}
+#| echo: false
+
+grid.arrange(plot_3, plot_35, ncol = 2, top = "Density of the Running Variable Near RD Thresholds")
+
+
+
 ```
