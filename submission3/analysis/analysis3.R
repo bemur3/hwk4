@@ -3,7 +3,7 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, readr, readxl, hrbrthemes, fixest,
                scales, gganimate, gapminder, gifski, png, tufte, plotly, OECD,
                ggrepel, survey, foreign, devtools, pdftools, kableExtra, modelsummary,
-               kableExtra, broom, gridExtra)
+               kableExtra, broom, gridExtra, cobalt, patchwork)
 # Load merged and cleaned Medicare Advantage data
 ma_data <- read_rds("data/output/final_ma_data.rds")
 
@@ -301,70 +301,36 @@ plot_35 <- ggplot(cutoff_35, aes(x = raw.rating)) +
 grid.arrange(plot_3, plot_35, ncol = 2, top = "Density of the Running Variable Near RD Thresholds")
 
 # 9. 
-library(forcats)
 
-# Ensure HMO and partd flags are binary
-data.2010 <- data.2010 %>%
-  mutate(
-    HMO_flag = as.numeric(HMO),
-    partd_flag = ifelse(partd == "Yes", 1, 0)
-  )
+lp.vars <- data.2010 %>% ungroup() %>%
+  filter( (raw.rating >=2.75-.125 & Star_Rating==2.5) |
+          (raw.rating >=2.75-.125 & Star_Rating==3.0) ) %>%
+          mutate(rounded=(Star_Rating==3.0)) %>%
+          select(HMO, partd, rounded) %>%
+          filter(complete.cases(.))
 
-# Function to create summary for a given cutoff
-compare_characteristics <- function(data, lower, upper, treat_val, control_val, label) {
-  sub_data <- data %>%
-    filter(
-      raw.rating >= lower,
-      raw.rating <= upper,
-      Star_Rating %in% c(treat_val, control_val)
-    ) %>%
-    mutate(group = ifelse(Star_Rating == treat_val, "Above", "Below"))
-  
-  summary <- sub_data %>%
-    group_by(group) %>%
-    summarise(
-      HMO = mean(HMO_flag, na.rm = TRUE),
-      PartD = mean(partd_flag, na.rm = TRUE),
-      .groups = "drop"
-    ) %>%
-    pivot_longer(cols = c(HMO, PartD), names_to = "Characteristic", values_to = "Mean") %>%
-    pivot_wider(names_from = group, values_from = Mean) %>%
-    mutate(
-      Difference = Above - Below,
-      Cutoff = label
-    )
-  
-  return(summary)
-}
+lp.covs <- lp.vars %>% select(HMO, partd)
 
-# Apply to both cutoffs
-comp_30 <- compare_characteristics(data.2010, 2.75 - 0.125, 2.75 + 0.125, 3.0, 2.5, "3 vs 2.5 Stars")
-comp_35 <- compare_characteristics(data.2010, 3.25 - 0.125, 3.25 + 0.125, 3.5, 3.0, "3.5 vs 3 Stars")
+plot.30 <- love.plot(bal.tab(lp.covs,treat=lp.vars$rounded), colors="black", shapes="circle",threshold=0.1) +
+  theme_bw() + theme(legend.position="none") 
 
-# Combine and plot
-combined_comp <- bind_rows(comp_30, comp_35)
+lp.vars <- data.2010 %>% ungroup() %>%
+  filter( (raw.rating >=3.25-.125 & Star_Rating==3.0) |
+          (raw.rating >=3.25-.125 & Star_Rating==3.5)) %>%
+          mutate(rounded=(Star_Rating==3.5)) %>%
+          select(HMO, partd, rounded) %>%
+          filter(complete.cases(.))
+     
+lp.covs <- lp.vars %>% select(HMO, partd)
 
-love_plot <- ggplot(combined_comp, aes(x = Difference, y = fct_rev(Characteristic), fill = Cutoff)) +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
-  geom_col(position = position_dodge(width = 0.7), width = 0.6) +
-  labs(
-    title = "Mean Differences in Plan Characteristics Near RD Cutoffs",
-    x = "Mean Difference (Above - Below)",
-    y = NULL
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(legend.position = "top")
+plot.35 <- love.plot(bal.tab(lp.covs,treat=lp.vars$rounded), colors="black", shapes="circle",threshold=0.1) +
+  theme_bw() + theme(legend.position="none") 
 
-print(love_plot)
+# Combine Plots
+combined_plot <- plot.30 + plot.35 + plot_layout(ncol = 2)
 
-ggsave(
-  filename = "results/love_plot_characteristics_cutoffs.png",
-  plot = love_plot,
-  width = 8,
-  height = 5,
-  dpi = 300,
-  bg = "white"
-)
+# Save Output
+ggsave("results/love_plot_cutoffs_combined.png", plot = combined_plot, width = 12, height = 5, dpi = 300)
 
 rm(list=c("ma_filtered", "county_plan_counts", "star_subset", "benchmark_summary", 
    "ma_share_summary", "cor_data", "data.2010", 
