@@ -39,7 +39,7 @@ plan_counts <- ggplot(county_plan_counts, aes(x = factor(year), y = plan_count))
     panel.grid.major = element_line(color = "grey80"),
     panel.grid.minor = element_line(color = "grey90")
   )
-ggsave("plan_counts.png", plot = plan_counts, width = 8, height = 5)
+
 
 # 2. Star Rating Distributions
 
@@ -91,8 +91,9 @@ benchmark_plot <- ggplot(benchmark_summary, aes(x = year, y = avg_benchmark)) +
   ) +
   theme_minimal(base_size = 14)
 
-ggsave("results/avg_benchmark_payment_2010_2015.png", plot = benchmark_plot, width = 8, height = 5, dpi = 300)
+print(benchmark_plot)
 
+library(scales)
 
 # 4. 
 ma_share_summary <- ma_data %>%
@@ -102,7 +103,7 @@ ma_share_summary <- ma_data %>%
   summarize(avg_ma_share = mean(ma_share, na.rm = TRUE))
 
 # Plot MA Share
-ma_plot <- ggplot(ma_share_summary, aes(x = year, y = avg_ma_share)) +
+ma_share_plot <- ggplot(ma_share_summary, aes(x = year, y = avg_ma_share)) +
   geom_line(color = "dodgerblue", linewidth = 1.2) +
   geom_point(size = 3) +
   scale_y_continuous(labels = percent_format(accuracy = 1)) +
@@ -113,8 +114,7 @@ ma_plot <- ggplot(ma_share_summary, aes(x = year, y = avg_ma_share)) +
   ) +
   theme_minimal(base_size = 14)
 
-ggsave("results/avg_ma_share_2010_2015.png", plot = ma_plot, width = 8, height = 5, dpi = 300)
-
+print(ma_share_plot)
 
 
 cor_data <- ma_data %>%
@@ -302,5 +302,11 @@ plot_35 <- ggplot(cutoff_35, aes(x = raw.rating)) +
 # Combine the plots side-by-side
 grid.arrange(plot_3, plot_35, ncol = 2, top = "Density of the Running Variable Near RD Thresholds")
 
-rm(list=c("ma_data", "ma_filtered", "county_plan_counts", "cor_data", "rating_2010", "rd_data", "rd_3", "rd_35", "rd_results", "star_rd_data", "run_rdrobust", "cutoffs", "bandwidths", "grid", "results", "results_clean"))
-save.image("submission1/Hmwk4_workspace.RData")
+# 9. 
+
+
+rm(list=c("ma_filtered", "county_plan_counts", "star_subset", "benchmark_summary", 
+   "ma_share_summary", "cor_data", "data.2010", 
+   "cutoffs", "bandwidths", "labels", "run_rd_model", 
+   "cutoff_3", "cutoff_35"))
+save.image("submission2/Hwk4_workspace.RData")
