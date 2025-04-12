@@ -4,7 +4,7 @@ subtitle: "ECON 470, Spring 2025"
 author: "Ethan Murakami"
 format:
   pdf:
-    output-file: "murakami_e_hmwk4_s1"
+    output-file: "murakami_e_hmwk4_s3"
     output-ext:  "pdf"
     header-includes:
       - \usepackage{float}
@@ -30,7 +30,7 @@ Here is a link to my repository: {https://github.com/bemur3/hwk4}
 #| eval: true
 
 
-load("/Users/ethanmurakami/Documents/GitHub/hwk4/submission2/Hwk4_workspace.RData")
+load("/Users/ethanmurakami/Documents/GitHub/hwk4/submission3/Hwk4_workspace.RData")
 ```
 
 
@@ -46,6 +46,8 @@ load("/Users/ethanmurakami/Documents/GitHub/hwk4/submission2/Hwk4_workspace.RDat
 print(plan_counts)
 ```
 
+### The distributions of plan counts seem to slightly decrease each year. Aside from 2010 though, the median number of plans appears to stay consistent. The range of 10-20 plans is sufficient, as it allows beneficiaries variation between different premiums, benefits and quality while also not being too overwhelming in number. 
+
 \newpage 
 
 ## 2. Provide bar graphs showing the distribution of star ratings in 2010, 2012, and 2015. How has this distribution changed over time?
@@ -54,6 +56,8 @@ print(plan_counts)
 #| echo: false
 print(star_rating_plot)
 ```
+
+### The distribution shifts to be skewed more right towards the higher star ratings over time, with 2.5 star ratings in particular having drastic decreases. This suggests a positive trend towards higher quality plans. 
 
 \newpage 
 
@@ -66,6 +70,8 @@ print(star_rating_plot)
 print(benchmark_plot)
 ```
 
+### Average benchmark payment steadily rose from 2010-2014 before dropping by about $80 in 2015. 
+
 \newpage 
 
 ## 4. Plot the average share of Medicare Advantage (relative to all Medicare eligibles) over time from 2010 through 2015. Has Medicare Advantage increased or decreased in popularity? How does this share correlate with benchmark payments?
@@ -76,6 +82,8 @@ print(benchmark_plot)
 print(ma_share_plot)
 
 ```
+
+### The enrollments steadily increase each year, showing a growing popularity in Medicare Advantage. As benchmark payments increased or remained relatively elevated, they likely facilitated the expansion of MA plans, contributing to the rise in MA enrollment share. This indicates a positive and policy-relevant correlation between higher benchmark payments and the popularity of Medicare Advantage.
 
 \newpage 
 
@@ -110,9 +118,10 @@ print(effect_plot)
 
 ```
 
+### The results for the 3 star cutoff were mostly insensitive to bandiwdth. The results for the 3.5 star cutoff were slightly more sensitive between bandwidths, as the treatment effect jumped from a negative value to around 0 from 0.14 to 0.15. Overall though, the results are largely insensitive, demonstrating confidence in the RD estimates. 
 \newpage
 
-## 8. Examine (graphically) whether contracts appear to manipulate the running variable. In other words, look at the distribution of the running variable before and after the relevent threshold values. What do you find
+## 8. Examine (graphically) whether contracts appear to manipulate the running variable. In other words, look at the distribution of the running variable before and after the relevent threshold values. What do you find?
 
 ```{r}
 #| echo: false
@@ -122,3 +131,24 @@ grid.arrange(plot_3, plot_35, ncol = 2, top = "Density of the Running Variable N
 
 
 ```
+
+### There is no clear evidence of insurer manipulation here. If there was, the distribution of plans would be skewed towards above the cutoff threshold because insurers would want to push their scores just slightly above the threshold, but the distribution for both sides is skewed towards the left of the threshold. It could be argued that there may have been some attempt at manipulation for the 3.0 cutoff graph, as there is a large spike just before the threshold line, but it ultimately doesn't cross over 2.75.
+
+\newpage
+
+## 9. Similar to question 4, examine whether plans just above the threshold values have different characteristics than contracts just below the threshold values. Use HMO and Part D status as your plan characteristics.
+
+```{r}
+#| echo: false
+
+print(combined_plot)
+
+```
+
+### In both plots, we observe that the HMO characteristic exhibits a greater standardized mean difference around the cutoff compared to the Part D status. This indicates that plans just above the rating thresholds (3 and 3.5 stars) are more likely to differ in their HMO status than their Part D offering, suggesting systematic differences between treated and control groups. These imbalances challenge a key assumption of the regression discontinuity design — that units on either side of the cutoff are comparable — and may weaken the internal validity of the RDD estimates.
+
+\newpage
+
+## 10.Summarize your findings from 5-9. What is the effect of increasing a star rating on enrollments? Briefly explain your results.
+
+### The results of questions 5-9 suggest that increasing star rating can have a significant impact on plan enrollment. Receiving a 3-star rating (vs. 2.5) caused a statistically significant increase in enrollment share. This implies that beneficiaries were more likely to enroll in plans that just crossed the threshold into a 3-star rating, highlighting the salience of star ratings in consumer choice. Surprisingly, plans receiving a 3.5-star rating (vs. 3) saw a decrease in market share. This could potentially mean enrollee preferences don't put as much weight on star ratings within the same number range; a 0.5 jump doesn't have the same impact as jumping up to a full 3 stars as it does jumping up to a 3.5 stars. Question 7 suggests these results were robust across different bandwidths, which supports the validity of our findings, as treatment effects were not sensitive to these bandwidths. Question 9 showed that there is evidence of imbalance at the 3.0-star cutoff, especially for HMO status, which challenges the validity of RDD assumptions there. In contrast, the 3.5-star cutoff appears more suitable for RDD, as observed covariates are better balanced across the threshold. Applying this to our question 8 results, our notion that there was no manipulation becomes even stronger. Despite this, 3.0 stars is a meaningful threshold, associated with measurable changes in market behavior, meaning that raising it above 3 stars could significantly impact its competitiveness.
