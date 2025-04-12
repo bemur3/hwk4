@@ -70,7 +70,7 @@ print(star_rating_plot)
 print(benchmark_plot)
 ```
 
-### Average benchmark payment steadily rose from 2010-2014 before dropping by about $80 in 2015. 
+### Average benchmark payment steadily rose from 2010-2014 before dropping by about $800 in 2015. 
 
 \newpage 
 
@@ -83,7 +83,7 @@ print(ma_share_plot)
 
 ```
 
-### The enrollments steadily increase each year, showing a growing popularity in Medicare Advantage. As benchmark payments increased or remained relatively elevated, they likely facilitated the expansion of MA plans, contributing to the rise in MA enrollment share. This indicates a positive and policy-relevant correlation between higher benchmark payments and the popularity of Medicare Advantage.
+### The enrollments steadily increase each year, showing a growing popularity in Medicare Advantage. As benchmark payments increased or remained relatively elevated, they likely facilitated the expansion of MA plans, contributing to the rise in MA enrollment share. This effect seems to be independent of benchmark payments, as they stayed mostly consistent in question 3.
 
 \newpage 
 
